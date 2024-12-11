@@ -1,10 +1,20 @@
-from flask import jsonify, request
+from flask import jsonify, request, render_template
 from app.models import Formula
 from app.db import db
 
 from app.formulaCompare import compare_formula_trees, normalize_formula
 
 def init_routes(app):
+    """
+    Домашняя страница
+
+    Returns:
+        Страница html
+    """
+    @app.route('/')
+    def home_page():
+        return render_template('index.html')
+    
     """
     Инициализирует маршруты для приложения Flask.
     """
