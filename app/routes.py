@@ -16,15 +16,15 @@ def init_routes(app):
         return render_template('index.html')
     
     """
-    Инициализирует маршруты для приложения Flask.
+    Инициализирует маршруты для приложения Flask
     """
     @app.route('/api/formulas', methods=['GET'])
     def get_formulas():
         """
-        Получить список всех формул из базы данных.
+        Получить список всех формул из базы данных
 
         Returns:
-            Response: JSON-ответ, содержащий список формул.
+            Response: JSON-ответ, содержащий список формул
         """
         formulas = Formula.query.all()
         return jsonify([formula.to_dict() for formula in formulas])
@@ -32,13 +32,13 @@ def init_routes(app):
     @app.route('/api/formulas/<int:id>', methods=['GET'])
     def get_formula(id):
         """
-        Получить формулу по её ID.
+        Получить формулу по её ID
 
         Args:
-            id (int): ID формулы для получения.
+            id (int): ID формулы для получения
 
         Returns:
-            Response: JSON-ответ с данными формулы.
+            Response: JSON-ответ с данными формулы
         """
         formula = Formula.query.get_or_404(id)
         return jsonify(formula.to_dict())
@@ -46,14 +46,14 @@ def init_routes(app):
     @app.route('/api/formulas', methods=['POST'])
     def add_formula():
         """
-        Добавить новую формулу в базу данных.
+        Добавить новую формулу в базу данных
 
         JSON-запрос:
-            fullName (str): Название формулы.
-            expression (str): Математическое выражение формулы.
+            fullName (str): Название формулы
+            expression (str): Математическое выражение формулы
 
         Returns:
-            Response: JSON-ответ с данными созданной формулы.
+            Response: JSON-ответ с данными созданной формулы
         """
         data = request.get_json()
         if not data or 'fullName' not in data or 'expression' not in data:
@@ -70,17 +70,17 @@ def init_routes(app):
     @app.route('/api/formulas/<int:id>', methods=['PUT'])
     def update_formula(id):
         """
-        Обновить существующую формулу по её ID.
+        Обновить существующую формулу по её ID
 
         Args:
-            id (int): ID формулы для обновления.
+            id (int): ID формулы для обновления
 
         JSON-запрос:
-            fullName (str): Название формулы.
-            expression (str): Математическое выражение формулы.
+            fullName (str): Название формулы
+            expression (str): Математическое выражение формулы
 
         Returns:
-            Response: JSON-ответ с обновлёнными данными формулы.
+            Response: JSON-ответ с обновлёнными данными формулы
         """
         formula = Formula.query.get_or_404(id)
         data = request.get_json()
@@ -96,13 +96,13 @@ def init_routes(app):
     @app.route('/api/formulas/<int:id>', methods=['DELETE'])
     def delete_formula(id):
         """
-        Удалить формулу по её ID.
+        Удалить формулу по её ID
 
         Args:
-            id (int): ID формулы для удаления.
+            id (int): ID формулы для удаления
 
         Returns:
-            Response: JSON-ответ с подтверждением удаления.
+            Response: JSON-ответ с подтверждением удаления
         """
         formula = Formula.query.get_or_404(id)
         db.session.delete(formula)
@@ -112,12 +112,31 @@ def init_routes(app):
     @app.route('/api/formulas/compare', methods=['POST'])
     def compare_formula():
         """
-        Проверка формулы на совпадения.
+        Проверка формулы на совпадения
 
         JSON-запрос:
-            expression (str): Математическое выражение формулы.
+            expression (str): Математическое выражение формулы
 
         Returns:
             Response: JSON-ответ
         """
-        return jsonify({'message': f'Ы'}), 200
+        data = request.get_json()
+        if not data or 'expression' not in data:
+            return jsonify({'error': 'Неверные данные'}), 400
+        
+        formula = data['expression']
+
+        formulas = Formula.query.all()
+        
+        result = []
+        for exist_formula in formulas:
+            try:
+                result.append(compare_formula_trees(formula, exist_formula.expression))
+            except Exception as e:
+                print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {e}')
+        result = sorted(result, key=lambda res: res['similarity'], reverse=True)[0]
+
+        if result['similarity'] == 0:
+            return jsonify({'answer': 'Совпадений не найдено'})
+
+        return jsonify(result)
