@@ -64,122 +64,287 @@
             background-color: #ddd;
             cursor: not-allowed;
         }
+
+        .refresh-button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .refresh-button:hover {
+            background-color: #218838;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .search-container button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .search-container button:hover {
+            background-color: #0056b3;
+        }
+
+        .btn { margin: 5px; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .btn.edit { background-color: #0794ff; color: white; }
+        .btn.delete { background-color: #dc3545; color: white; }
+        .btn.save {  background-color: #3596dc; color: white;}
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; }
+        .modal-content { background-color: white; padding: 20px; border-radius: 5px; width: 80%; max-width: 500px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin: 5px 0; }
+        .modal-header h2 { margin: 0; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-div { margin: 5px;}
+
+        label { font-size: 1.5em; margin: 5px 0;}
     </style>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="stylesheet" href="../static/katex.min.css">
+    <script src="../static/katex.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Formulas Admin Panel</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Full Name</th>
-                    <th>Normalized</th>
-                    <th>Expression</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody id="formulas-table">
-                <tr>
-                    <td colspan="5" style="text-align: center;">Loading...</td>
-                </tr>
-            </tbody>
-        </table>
-        <div class="pagination" id="pagination"></div>
+<div class="container">
+    <h1>Управление формулами</h1>
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Введите текст для поиска">
+        <button onclick="searchFormulas()">Поиск</button>
     </div>
+    <button class="refresh-button" onclick="refreshFormulas()">Обновить список</button>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Название формулы</th>
+            <th>Выражение</th>
+            <th>Дата добавления формулы</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody id="formulas-table">
+        <tr>
+            <td colspan="5" style="text-align: center;">Загрузка...</td>
+        </tr>
+        </tbody>
+    </table>
+    <div class="pagination" id="pagination"></div>
+</div>
 
-    <script>
-        const apiUrl = 'http://localhost:5000/api/formulas';
-        let currentPage = 1;
-        const itemsPerPage = 10;
-        let allFormulas = [];
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Редактировать формулу</h2>
+        </div>
+        <div class="modal-div">
+            <label>Название формулы</label>
+            <input type="text" id="formulaName" style="width: 100%; line-height: 2em; font-size: 1.25em">
+        </div>
+        <div class="modal-div">
+            <label>LaTeX выражение</label>
+            <input type="text" id="formulaExpression" style="width: 100%; line-height: 2em; font-size: 1.25em" oninput="updateRenderedFormula()">
+        </div>
+        <div>
+            <p style="font-size: 1.25em">Формула:</p>
+            <div id="renderedFormula" style="background-color: #f4f4f9; padding: 20px; border-radius: 5px; margin: 20px 0; font-size: 1.25em;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn save" onclick="saveFormula()">Сохранить</button>
+            <button class="btn" onclick="closeModal()">Отмена</button>
+        </div>
+        <p id="error-message" style="color: red; display: none;"></p>
+    </div>
+</div>
 
-        async function fetchAllFormulas() {
-            const response = await fetch(apiUrl);
-            if (!response.ok) {
-                console.error('Failed to fetch formulas.');
-                return [];
+
+<script>
+    const apiUrl = 'http://localhost:5000/api/formulas';
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let allFormulas = [];
+
+    let currentEditingFormula = null;
+
+    function openEditModal(formula) {
+        currentEditingFormula = formula;
+        document.getElementById('formulaName').value = formula.fullName;
+        document.getElementById('formulaExpression').value = formula.expression;
+        updateRenderedFormula();
+        const modal = document.getElementById('editModal');
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('editModal');
+        modal.style.display = 'none';
+        document.getElementById('error-message').style.display = 'none';
+    }
+
+    function updateRenderedFormula() {
+        const formula = document.getElementById('formulaExpression').value;
+        const renderDiv = document.getElementById('renderedFormula');
+        try {
+            renderDiv.innerHTML = katex.renderToString(formula, { throwOnError: false });
+        } catch (error) {
+            renderDiv.textContent = 'Ошибка в рендеринге формулы';
+        }
+    }
+
+    async function deleteFormula(id) {
+        if (confirm('Вы уверены, что хотите удалить эту формулу?')) {
+            const response = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                refreshFormulas();
+            } else {
+                alert('Ошибка при удалении формулы');
             }
-            return await response.json();
+        }
+    }
+    async function saveFormula() {
+        const name = document.getElementById('formulaName').value;
+        const expression = document.getElementById('formulaExpression').value;
+        const response = await fetch(`${apiUrl}/${currentEditingFormula.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullName: name, expression })
+        });
+
+        if (response.ok) {
+            alert('Формула обновлена');
+            closeModal();
+            refreshFormulas();
+        } else {
+            const error = await response.json();
+            document.getElementById('error-message').textContent = error.answer;
+            document.getElementById('error-message').style.display = 'block';
+        }
+    }
+    async function fetchFormulas(query = '') {
+        const url = query ? `${apiUrl}/${encodeURIComponent(query)}` : apiUrl;
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.error('Failed to fetch formulas.');
+            return [];
+        }
+        return await response.json();
+    }
+
+    function getPaginatedFormulas(page, perPage) {
+        const start = (page - 1) * perPage;
+        const end = start + perPage;
+        return allFormulas.slice(start, end);
+    }
+
+    function renderFormulas(formulas) {
+        const tableBody = document.getElementById('formulas-table');
+        tableBody.innerHTML = '';
+
+        if (formulas.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No formulas found.</td></tr>';
+            return;
         }
 
-        function getPaginatedFormulas(page, perPage) {
-            const start = (page - 1) * perPage;
-            const end = start + perPage;
-            return allFormulas.slice(start, end);
-        }
-
-        function renderFormulas(formulas) {
-            const tableBody = document.getElementById('formulas-table');
-            tableBody.innerHTML = '';
-
-            if (formulas.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No formulas found.</td></tr>';
-                return;
-            }
-
-            formulas.forEach(formula => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
+        formulas.forEach(formula => {
+            const row = document.createElement('tr');
+            const prettyFormula = katex.renderToString(formula.expression, {
+                throwOnError: false
+            });
+            row.innerHTML = `
                     <td>${formula.id}</td>
                     <td>${formula.fullName}</td>
-                    <td>${formula.normalized}</td>
-                    <td>\(${formula.expression}\)</td>
+                    <td style="width: 300px;">${prettyFormula}</td>
                     <td>${new Date(formula.date).toLocaleDateString()}</td>
+                    <td>
+                    <button class="btn edit" onclick='openEditModal(${JSON.stringify(formula)})'>Изменить</button>
+                    <button class="btn delete" onclick='deleteFormula(${formula.id})'>Удалить</button>
+                </td>
                 `;
-                tableBody.appendChild(row);
-            });
+            tableBody.appendChild(row);
+        });
+    }
 
-            MathJax.typesetPromise();
-        }
+    async function searchFormulas() {
+        const query = document.getElementById('search-input').value.trim();
+        if (query == '')
+            allFormulas = await fetchFormulas()
+        else
+            allFormulas = [await fetchFormulas(query)];
+        currentPage = 1; // Reset to the first page after search
+        updateTable();
+    }
 
-        function renderPagination(totalPages) {
-            const pagination = document.getElementById('pagination');
-            pagination.innerHTML = '';
+    async function updateTable() {
+        const totalPages = Math.ceil(allFormulas.length / itemsPerPage);
+        const paginatedFormulas = getPaginatedFormulas(currentPage, itemsPerPage);
+        renderFormulas(paginatedFormulas);
+        renderPagination(totalPages);
+    }
 
-            const createButton = (page, text, disabled = false) => {
-                const button = document.createElement('button');
-                button.textContent = text;
-                button.disabled = disabled;
-                button.onclick = () => {
-                    currentPage = page;
-                    updateTable();
-                };
-                pagination.appendChild(button);
+    function renderPagination(totalPages) {
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+
+        const createButton = (page, text, disabled = false) => {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.disabled = disabled;
+            button.onclick = () => {
+                currentPage = page;
+                updateTable();
             };
+            pagination.appendChild(button);
+        };
 
-            createButton(currentPage - 1, 'Previous', currentPage === 1);
+        createButton(currentPage - 1, 'Предыдущая', currentPage === 1);
 
-            for (let i = 1; i <= totalPages; i++) {
-                const button = document.createElement('button');
-                button.textContent = i;
-                button.disabled = i === currentPage;
-                button.onclick = () => {
-                    currentPage = i;
-                    updateTable();
-                };
-                pagination.appendChild(button);
-            }
-
-            createButton(currentPage + 1, 'Next', currentPage === totalPages);
+        for (let i = 1; i <= totalPages; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.disabled = i === currentPage;
+            button.onclick = () => {
+                currentPage = i;
+                updateTable();
+            };
+            pagination.appendChild(button);
         }
 
-        async function updateTable() {
-            const totalPages = Math.ceil(allFormulas.length / itemsPerPage);
-            const paginatedFormulas = getPaginatedFormulas(currentPage, itemsPerPage);
-            renderFormulas(paginatedFormulas);
-            renderPagination(totalPages);
-        }
+        createButton(currentPage + 1, 'Следующая', currentPage === totalPages);
+    }
 
-        async function initialize() {
-            allFormulas = await fetchAllFormulas();
-            updateTable();
-        }
+    async function refreshFormulas() {
+        initialize()
+    }
 
-        initialize();
-    </script>
+    async function initialize() {
+        allFormulas = await fetchFormulas();
+        updateTable();
+    }
+
+    initialize();
+</script>
 </body>
 </html>

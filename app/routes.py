@@ -129,7 +129,7 @@ def init_routes(app):
             return jsonify({'error': 'Неверные данные'}), 400
         
         last_formula = Formula.query.filter(Formula.fullName.ilike(data['fullName'])).first()
-        if formula.id != last_formula.id:
+        if last_formula and formula.id != last_formula.id:
             return jsonify({'answer': 'Формула с таким названием уже существует'}), 400
 
         formula.fullName = data.get('fullName', formula.fullName)
