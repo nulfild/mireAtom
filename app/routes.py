@@ -6,18 +6,29 @@ from app.formulaCompare import compare_formula_trees, normalize_formula
 
 def init_routes(app):
     """
-    Домашняя страница
-
-    Returns:
-        Страница html
-    """
-    @app.route('/')
-    def home_page():
-        return render_template('index.html')
-    
-    """
     Инициализирует маршруты для приложения Flask
     """
+    
+    @app.route('/')
+    def home_page():
+        """
+        Домашняя страница
+
+        Returns:
+            Страница html
+        """
+        return render_template('index.html')
+    
+    @app.route('/formula')
+    def admin_page():
+        """
+        Страница редактирвоания БД
+
+        Returns:
+            Страница html
+        """
+        return render_template('admin.html')
+    
     @app.route('/api/formulas', methods=['GET'])
     def get_formulas():
         """
