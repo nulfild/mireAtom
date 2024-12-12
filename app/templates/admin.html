@@ -3,9 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Formulas Admin Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .pagination button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            margin: 0 5px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .pagination button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+    </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    Admin page!
+    <div class="container">
+        <h1>Formulas Admin Panel</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Full Name</th>
+                    <th>Normalized</th>
+                    <th>Expression</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody id="formulas-table">
+                <tr>
+                    <td colspan="5" style="text-align: center;">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:5000/api/formulas';
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let allFormulas = [];
+
+        async function fetchAllFormulas() {
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                console.error('Failed to fetch formulas.');
+                return [];
+            }
+            return await response.json();
+        }
+
+        function getPaginatedFormulas(page, perPage) {
+            const start = (page - 1) * perPage;
+            const end = start + perPage;
+            return allFormulas.slice(start, end);
+        }
+
+        function renderFormulas(formulas) {
+            const tableBody = document.getElementById('formulas-table');
+            tableBody.innerHTML = '';
+
+            if (formulas.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No formulas found.</td></tr>';
+                return;
+            }
+
+            formulas.forEach(formula => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formula.id}</td>
+                    <td>${formula.fullName}</td>
+                    <td>${formula.normalized}</td>
+                    <td>\(${formula.expression}\)</td>
+                    <td>${new Date(formula.date).toLocaleDateString()}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            MathJax.typesetPromise();
+        }
+
+        function renderPagination(totalPages) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            const createButton = (page, text, disabled = false) => {
+                const button = document.createElement('button');
+                button.textContent = text;
+                button.disabled = disabled;
+                button.onclick = () => {
+                    currentPage = page;
+                    updateTable();
+                };
+                pagination.appendChild(button);
+            };
+
+            createButton(currentPage - 1, 'Previous', currentPage === 1);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.disabled = i === currentPage;
+                button.onclick = () => {
+                    currentPage = i;
+                    updateTable();
+                };
+                pagination.appendChild(button);
+            }
+
+            createButton(currentPage + 1, 'Next', currentPage === totalPages);
+        }
+
+        async function updateTable() {
+            const totalPages = Math.ceil(allFormulas.length / itemsPerPage);
+            const paginatedFormulas = getPaginatedFormulas(currentPage, itemsPerPage);
+            renderFormulas(paginatedFormulas);
+            renderPagination(totalPages);
+        }
+
+        async function initialize() {
+            allFormulas = await fetchAllFormulas();
+            updateTable();
+        }
+
+        initialize();
+    </script>
 </body>
 </html>
