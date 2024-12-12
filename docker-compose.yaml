@@ -16,7 +16,7 @@ services:
     container_name: postgres_db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
+      POSTGRES_PASSWORD: postgresql
       POSTGRES_DB: FormulDB
     ports:
       - "5432:5432"

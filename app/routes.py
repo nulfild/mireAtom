@@ -1,4 +1,5 @@
 from flask import jsonify, request, render_template
+from sqlalchemy import func
 from app.models import Formula
 from app.db import db
 
@@ -41,7 +42,7 @@ def init_routes(app):
         return jsonify([formula.to_dict() for formula in formulas])
 
     @app.route('/api/formulas/<int:id>', methods=['GET'])
-    def get_formula(id):
+    def get_formula_by_id(id):
         """
         Получить формулу по её ID
 
@@ -53,6 +54,23 @@ def init_routes(app):
         """
         formula = Formula.query.get_or_404(id)
         return jsonify(formula.to_dict())
+    
+    @app.route('/api/formulas/<string:fullName>', methods=['GET'])
+    def get_formula_by_fullName(fullName):
+        """
+        Получить формулу по названию
+
+        Args:
+            fullName (str): Название формулы для получения
+
+        Returns:
+            Response: JSON-ответ с данными формулы
+        """
+        formula = Formula.query.filter(Formula.fullName.ilike(fullName)).first()
+        if not formula:
+            return jsonify({'answer': 'Not found'}), 404
+        return jsonify(formula.to_dict())
+
 
     @app.route('/api/formulas', methods=['POST'])
     def add_formula():
@@ -69,6 +87,10 @@ def init_routes(app):
         data = request.get_json()
         if not data or 'fullName' not in data or 'expression' not in data:
             return jsonify({'error': 'Неверные данные'}), 400
+        
+        formula = Formula.query.filter(Formula.fullName.ilike(data['fullName'])).first()
+        if formula:
+            return jsonify({'answer': 'Формула с таким названием уже существует'}), 400
 
         new_formula = Formula(
                             fullName=data['fullName'], 
@@ -97,6 +119,10 @@ def init_routes(app):
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Неверные данные'}), 400
+        
+        last_formula = Formula.query.filter(Formula.fullName.ilike(data['fullName'])).first()
+        if formula.id != last_formula.id:
+            return jsonify({'answer': 'Формула с таким названием уже существует'}), 400
 
         formula.fullName = data.get('fullName', formula.fullName)
         formula.expression = data.get('expression', formula.expression)
