@@ -1,4 +1,5 @@
 from flask import jsonify, request, render_template
+from flask_cors import cross_origin
 from sqlalchemy import func
 from app.models import Formula
 from app.db import db
@@ -11,6 +12,7 @@ def init_routes(app):
     """
     
     @app.route('/')
+    @cross_origin()
     def home_page():
         """
         Домашняя страница
@@ -21,6 +23,7 @@ def init_routes(app):
         return render_template('index.html')
     
     @app.route('/formula')
+    @cross_origin()
     def admin_page():
         """
         Страница редактирвоания БД
@@ -31,6 +34,7 @@ def init_routes(app):
         return render_template('admin.html')
     
     @app.route('/api/formulas', methods=['GET'])
+    @cross_origin()
     def get_formulas():
         """
         Получить список всех формул из базы данных
@@ -42,6 +46,7 @@ def init_routes(app):
         return jsonify([formula.to_dict() for formula in formulas])
 
     @app.route('/api/formulas/<int:id>', methods=['GET'])
+    @cross_origin()
     def get_formula_by_id(id):
         """
         Получить формулу по её ID
@@ -56,6 +61,7 @@ def init_routes(app):
         return jsonify(formula.to_dict())
     
     @app.route('/api/formulas/<string:fullName>', methods=['GET'])
+    @cross_origin()
     def get_formula_by_fullName(fullName):
         """
         Получить формулу по названию
@@ -73,6 +79,7 @@ def init_routes(app):
 
 
     @app.route('/api/formulas', methods=['POST'])
+    @cross_origin()
     def add_formula():
         """
         Добавить новую формулу в базу данных
@@ -101,6 +108,7 @@ def init_routes(app):
         return jsonify(new_formula.to_dict()), 201
 
     @app.route('/api/formulas/<int:id>', methods=['PUT'])
+    @cross_origin()
     def update_formula(id):
         """
         Обновить существующую формулу по её ID
@@ -131,6 +139,7 @@ def init_routes(app):
         return jsonify(formula.to_dict())
 
     @app.route('/api/formulas/<int:id>', methods=['DELETE'])
+    @cross_origin()
     def delete_formula(id):
         """
         Удалить формулу по её ID
@@ -147,6 +156,7 @@ def init_routes(app):
         return jsonify({'message': f'Формула с ID {id} удалена'}), 200
     
     @app.route('/api/formulas/compare', methods=['POST'])
+    @cross_origin()
     def compare_formula():
         """
         Проверка формулы на совпадения

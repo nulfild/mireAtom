@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 
@@ -20,10 +21,13 @@ def create_app():
     Создаёт и возвращает экземпляр Flask-приложения.
     """
     app = Flask(__name__)
+    cors = CORS(app)
 
     # Настройки приложения
     app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_DATABESE}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    app.config['CORS_HEADERS'] = 'Content-Type'
 
     # Инициализация расширений
     db.init_app(app)
