@@ -66,9 +66,7 @@
         }
 
         .refresh-button {
-            display: block;
-            margin: 10px auto;
-            padding: 10px 20px;
+            margin: 0 10px;
             background-color: #28a745;
             color: white;
             border: none;
@@ -123,6 +121,22 @@
         .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
         .modal-div { margin: 5px;}
 
+        .button-to-main {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            padding: 10px;
+        }
+        .button-to-main:hover {
+            background-color: #0056b3;
+        }
+
+
+
         label { font-size: 1.5em; margin: 5px 0;}
     </style>
     <link rel="stylesheet" href="../static/katex.min.css">
@@ -132,10 +146,14 @@
 <div class="container">
     <h1>Управление формулами</h1>
     <div class="search-container">
-        <input type="text" id="search-input" placeholder="Введите текст для поиска">
+        <input type="text" id="search-input" placeholder="Введите название формулы">
         <button onclick="searchFormulas()">Поиск</button>
     </div>
-    <button class="refresh-button" onclick="refreshFormulas()">Обновить список</button>
+    <div style="display: inline-flex;">
+        <button class="button-to-main" onclick="window.location.href='http://localhost:5000/'">Перейти на главную</button>
+        <button class="refresh-button" onclick="refreshFormulas()">Обновить список</button>
+    </div>
+
     <table>
         <thead>
         <tr>
@@ -161,11 +179,11 @@
             <h2>Редактировать формулу</h2>
         </div>
         <div class="modal-div">
-            <label>Название формулы</label>
+            <label for="formulaName">Название формулы</label>
             <input type="text" id="formulaName" style="width: 100%; line-height: 2em; font-size: 1.25em">
         </div>
         <div class="modal-div">
-            <label>LaTeX выражение</label>
+            <label for="formulaExpression">LaTeX выражение</label>
             <input type="text" id="formulaExpression" style="width: 100%; line-height: 2em; font-size: 1.25em" oninput="updateRenderedFormula()">
         </div>
         <div>
@@ -188,6 +206,15 @@
     let allFormulas = [];
 
     let currentEditingFormula = null;
+
+
+    const searchInput = document.getElementById("search-input");
+    searchInput.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            searchFormulas()
+        }
+    })
 
     function openEditModal(formula) {
         currentEditingFormula = formula;
@@ -289,7 +316,7 @@
 
     async function searchFormulas() {
         const query = document.getElementById('search-input').value.trim();
-        if (query == '')
+        if (query === '')
             allFormulas = await fetchFormulas()
         else
             allFormulas = [await fetchFormulas(query)];
@@ -336,6 +363,8 @@
     }
 
     async function refreshFormulas() {
+        const searchInput = document.getElementById("search-input")
+        searchInput.value = ''
         initialize()
     }
 
