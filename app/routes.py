@@ -1,6 +1,5 @@
 from flask import jsonify, request, render_template
 from flask_cors import cross_origin
-from sqlalchemy import func
 from app.models import Formula
 from app.db import db
 
@@ -72,10 +71,8 @@ def init_routes(app):
         Returns:
             Response: JSON-ответ с данными формулы
         """
-        formula = Formula.query.filter(Formula.fullName.ilike(fullName)).first()
-        if not formula:
-            return jsonify({'answer': 'Not found'}), 404
-        return jsonify(formula.to_dict())
+        formulas = Formula.query.filter(Formula.fullName.ilike(f'%{fullName}%')).all()
+        return jsonify([formula.to_dict() for formula in formulas])
 
 
     @app.route('/api/formulas', methods=['POST'])
@@ -178,12 +175,20 @@ def init_routes(app):
         result = []
         for exist_formula in formulas:
             try:
-                result.append(compare_formula_trees(formula, exist_formula.expression))
+                compare_result = compare_formula_trees(formula, exist_formula.expression)
+                if 'error' in compare_result:
+                    print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {compare_result['error']}')
+                    continue
+                result.append(compare_result)
             except Exception as e:
                 print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {e}')
+
+        if len(result) == 0:
+            return jsonify({'answer': 'Совпадений не найдено'}), 200
+        
         result = sorted(result, key=lambda res: res['similarity'], reverse=True)[0]
 
         if result['similarity'] == 0:
-            return jsonify({'answer': 'Совпадений не найдено'})
+            return jsonify({'answer': 'Совпадений не найдено'}), 200
 
-        return jsonify(result)
+        return jsonify(result), 200

@@ -208,7 +208,7 @@ def compare_formula_trees(formula1, formula2):
         }
 
     except Exception as e:
-        return {"ошибка": str(e)}
+        return {"error": str(e)}
     
 if __name__ == "__main__":
     formula1 = r"a^2 + 2ab + b^2"
