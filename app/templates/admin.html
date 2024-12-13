@@ -150,8 +150,9 @@
         <button onclick="searchFormulas()">Поиск</button>
     </div>
     <div style="display: inline-flex;">
-        <button class="button-to-main" onclick="window.location.href='http://localhost:5000/'">Перейти на главную</button>
+        <button class="button-to-main" onclick="openCreateModal()">Добавить формулу</button>
         <button class="refresh-button" onclick="refreshFormulas()">Обновить список</button>
+        <button class="button-to-main" onclick="window.location.href='http://localhost:5000/'">Перейти на главную</button>
     </div>
 
     <table>
@@ -176,7 +177,7 @@
 <div id="editModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2>Редактировать формулу</h2>
+            <h2 id="modal-name"></h2>
         </div>
         <div class="modal-div">
             <label for="formulaName">Название формулы</label>
@@ -191,7 +192,7 @@
             <div id="renderedFormula" style="background-color: #f4f4f9; padding: 20px; border-radius: 5px; margin: 20px 0; font-size: 1.25em;"></div>
         </div>
         <div class="modal-footer">
-            <button class="btn save" onclick="saveFormula()">Сохранить</button>
+            <button class="btn save" onclick="saveOrEditFormula()">Сохранить</button>
             <button class="btn" onclick="closeModal()">Отмена</button>
         </div>
         <p id="error-message" style="color: red; display: none;"></p>
@@ -216,8 +217,35 @@
         }
     })
 
+    function saveOrEditFormula(formula) {
+        console.log(formula)
+        if (formula !== undefined) editFormula(formula)
+        else saveFormula()
+    }
+
+    async function saveFormula() {
+        const name = document.getElementById('formulaName').value;
+        const expression = document.getElementById('formulaExpression').value;
+        const response = await fetch(`${apiUrl}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullName: name, expression })
+        });
+
+        if (response.ok) {
+            alert('Формула добавлена');
+            closeModal();
+            refreshFormulas();
+        } else {
+            const error = await response.json();
+            document.getElementById('error-message').textContent = error.answer;
+            document.getElementById('error-message').style.display = 'block';
+        }
+    }
+
     function openEditModal(formula) {
         currentEditingFormula = formula;
+        document.getElementById('modal-name').innerText = 'Редактировать формулу'
         document.getElementById('formulaName').value = formula.fullName;
         document.getElementById('formulaExpression').value = formula.expression;
         updateRenderedFormula();
@@ -225,9 +253,18 @@
         modal.style.display = 'flex';
     }
 
+    function openCreateModal() {
+        document.getElementById('modal-name').innerText = 'Добавить формулу'
+        updateRenderedFormula();
+        const modal = document.getElementById('editModal');
+        modal.style.display = 'flex'
+    }
+
     function closeModal() {
         const modal = document.getElementById('editModal');
         modal.style.display = 'none';
+        document.getElementById('formulaName').value = ''
+        document.getElementById('formulaExpression').value = '';
         document.getElementById('error-message').style.display = 'none';
     }
 
@@ -251,7 +288,7 @@
             }
         }
     }
-    async function saveFormula() {
+    async function editFormula() {
         const name = document.getElementById('formulaName').value;
         const expression = document.getElementById('formulaExpression').value;
         const response = await fetch(`${apiUrl}/${currentEditingFormula.id}`, {
@@ -319,7 +356,7 @@
         if (query === '')
             allFormulas = await fetchFormulas()
         else
-            allFormulas = [await fetchFormulas(query)];
+            allFormulas = await fetchFormulas(query);
         currentPage = 1; // Reset to the first page after search
         updateTable();
     }
