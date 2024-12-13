@@ -46,6 +46,8 @@ docker-compose up -d
 
 API Сервера: `http://localhost:5000/api`
 
+Документация API: `http://localhost:5000/api/docs`
+
 ## Описание API
 
 ### Сущность Формула

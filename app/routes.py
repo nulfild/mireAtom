@@ -32,6 +32,16 @@ def init_routes(app):
         """
         return render_template('admin.html')
     
+    @app.route('/api/docs')
+    def get_docs():
+        """
+        Документация API
+
+        Returns:
+            Страница html
+        """
+        return render_template('swaggerui.html')
+    
     @app.route('/api/formulas', methods=['GET'])
     @cross_origin()
     def get_formulas():
@@ -177,7 +187,7 @@ def init_routes(app):
             try:
                 compare_result = compare_formula_trees(formula, exist_formula.expression)
                 if 'error' in compare_result:
-                    print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {compare_result['error']}')
+                    print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {compare_result.error}')
                     continue
                 result.append(compare_result)
             except Exception as e:
