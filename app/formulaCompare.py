@@ -12,6 +12,8 @@ def normalize_formula(expr):
     Returns:
         Нормализованное выражние в формате latex
     """
+    if '=' in expr:
+        return latex(parse_latex(expr).canonical)
     return latex(simplify(parse_latex(expr)))
 
 def build_tree(expr):
