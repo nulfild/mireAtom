@@ -73,6 +73,7 @@ def compare_subtrees(subtrees1, subtrees2, symbols):
         Совпадающие выражения
         Процент совпадения
     """
+    if len(subtrees2) == 0: return [], 0
     similarity = 0
     common_expressions = []
     for subtree in subtrees1:
@@ -164,8 +165,18 @@ def compare_formula_trees(formula1, formula2):
     """
     try:
         # Парсим формулы из LaTeX и упрощаем
-        expr1 = expand(simplify(parse_latex(formula1)))
-        expr2 = expand(simplify(parse_latex(formula2)))
+        expr1 = None
+        expr2 = None
+
+        if '=' in formula1:
+            expr1 = parse_latex(formula1).canonical
+        else:
+            expr1 = expand(simplify(parse_latex(formula1)))
+
+        if '=' in formula2:
+            expr2 = parse_latex(formula2).canonical
+        else:
+            expr2 = expand(simplify(parse_latex(formula2)))
 
         # Приводим переменные к единому формату
         expr1_norm, new_symbols = normalize_variables(expr1)
@@ -198,11 +209,14 @@ if __name__ == "__main__":
     # formula1 = r"a^2 + 2ab"
     # formula2 = r"x^2 + 2xy + y^2"
 
-    formula1 = r"\sqrt{32+x^2}+x"
-    formula2 = r"\sqrt{32+x^2}"
+    # formula1 = r"\sqrt{32+x^2}+x"
+    # formula2 = r"\sqrt{32+x^2}"
 
     # formula1 = r"888"
     # formula2 = r"888"
+
+    formula1 = r"(a + b)^2 = a^2 + 2ab + b^2"
+    formula2 = f"a^2 - b^2 = (a - b)(a + b)"
 
     result = compare_formula_trees(formula1, formula2)
     for key, value in result.items():
