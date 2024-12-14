@@ -30,60 +30,56 @@ def build_tree(expr):
     # Узел дерева — операция или функция
     return (expr.func, [build_tree(arg) for arg in expr.args])
 
-def flatten_tree(tree):
+def extract_subtrees(tree):
     """
-    Разворачивает дерево в плоский список
+    Составляет все поддеревья исходного дерева
 
     Args:
-        expr: Выражение в виде sympy объекта
-    Return:
-        flat_list (list): Развернутое дерево
-    """
-    if isinstance(tree, str):
-        return [tree]
-    root, children = tree
-    flat_list = [root]
-    for child in children:
-        flat_list.extend(flatten_tree(child))
-    return flat_list
-
-
-def compare_trees(tree1, tree2):
-    """
-    Рекурсивно сравнивает два дерева операций
-
-    Args:
-        tree1 (list): Дерево первого выражения
-        tree2 (list): Дерево второго выражения
+        tree (list): дерево
 
     Returns:
-        common_operations (list): совпадающие операции
-        common_subexpressions (list): совпадающие подвыражения
+        Список поддеревьев
     """
-    if isinstance(tree1, str) or isinstance(tree2, str):
-        # Если один из узлов — лист, сравниваем напрямую
-        return ([], [tree1] if tree1 == tree2 else [])
+    subtrees = []  # Список для хранения всех поддеревьев
+    stack = [tree]  # Стек для обхода узлов дерева
 
-    root1, children1 = tree1
-    root2, children2 = tree2
+    while stack:
+        node = stack.pop()
 
-    # Сравниваем корневые операции
-    common_operations = []
-    common_subexpressions = []
-    if root1 == root2:
-        common_operations.append(root1)
+        if isinstance(node, str):
+            # Если узел — строка (либо число, либо переменная), ничего не добавляем в subtrees
+            continue
 
-        # Если всё поддерево совпадает, добавляем его как совпадающее подвыражение
-        if children1 == children2:
-            common_subexpressions.append(tree1)
+        # Добавляем текущее поддерево в список
+        subtrees.append(sympify(subtree_to_expr(node)))
 
-    # Сравниваем поддеревья
-    for sub_tree1, sub_tree2 in zip(children1, children2):
-        sub_ops, sub_exprs = compare_trees(sub_tree1, sub_tree2)
-        common_operations.extend(sub_ops)
-        common_subexpressions.extend(sub_exprs)
+        # Узел содержит операцию и дочерние элементы
+        operation, children = node
 
-    return common_operations, common_subexpressions
+        # Добавляем дочерние элементы в стек
+        stack.extend(children)
+
+    return subtrees
+
+def compare_subtrees(subtrees1, subtrees2, symbols):
+    """
+    Сравнивает поддеревья
+
+    Args:
+        subtrees1 (list): список поддеревьев
+        subtrees2 (list): список поддеревьев
+
+    Returns:
+        Совпадающие выражения
+        Процент совпадения
+    """
+    similarity = 0
+    common_expressions = []
+    for subtree in subtrees1:
+        if subtree in subtrees2:
+            similarity += 1
+            common_expressions.append(latex(subtree.subs(symbols)))
+    return common_expressions, (similarity / len(subtrees2)) * 100
 
 
 def subtree_to_expr(tree, parent_expr=None):
@@ -99,8 +95,6 @@ def subtree_to_expr(tree, parent_expr=None):
     """
 
     if isinstance(tree, str):
-        # if parent_expr is None:
-            # return
         if tree.isdigit():  # Целое число
             return Integer(int(tree))
         return Symbol(tree)  # Переменная
@@ -109,7 +103,6 @@ def subtree_to_expr(tree, parent_expr=None):
     children_exprs = [subtree_to_expr(child, operation) for child in children]
 
     return operation(*children_exprs)
-
 
 def calculate_similarity(formula, common_expressions):
     """
@@ -128,7 +121,6 @@ def calculate_similarity(formula, common_expressions):
         # Находим максимальное похожее выражение и его возвращаем
         if res > similarity: similarity = res
     return similarity * 100
-
 
 def normalize_variables(sympy_expr):
     """
@@ -155,7 +147,6 @@ def normalize_variables(sympy_expr):
         print(f"Ошибка при нормализации переменных: {e}")
         return None
 
-
 def compare_formula_trees(formula1, formula2):
     """
     Сравнение двух формул
@@ -173,11 +164,8 @@ def compare_formula_trees(formula1, formula2):
     """
     try:
         # Парсим формулы из LaTeX и упрощаем
-        expr1 = simplify(parse_latex(formula1))
-        expr2 = simplify(parse_latex(formula2))
-
-        # expr1 = parse_latex(formula1).canonical
-        # expr2 = parse_latex(formula2).canonical
+        expr1 = expand(simplify(parse_latex(formula1)))
+        expr2 = expand(simplify(parse_latex(formula2)))
 
         # Приводим переменные к единому формату
         expr1_norm, new_symbols = normalize_variables(expr1)
@@ -187,47 +175,34 @@ def compare_formula_trees(formula1, formula2):
         tree1 = build_tree(expr1_norm)
         tree2 = build_tree(expr2_norm)
 
-        # Сравниваем деревья
-        common_operations, common_subexpressions = compare_trees(tree1, tree2)
-
         new_symbols = {v: k for k, v in new_symbols.items()}
 
-        # Преобразуем совпадающие подвыражения в LaTeX
-        common_expressions_latex = []
-        for sub_tree in common_subexpressions:
-            expr = subtree_to_expr(sub_tree)
-            if expr is not None:
-                expr = expr.subs(new_symbols)
-                common_expressions_latex.append(latex(expr))
+        subtrees1 = extract_subtrees(tree1)
+        subtrees2 = extract_subtrees(tree2)
 
-        expr1_from_tree = latex(simplify(subtree_to_expr(tree1).subs(new_symbols)))
+        expr1_from_tree = latex(simplify(subtree_to_expr(tree1)).subs(new_symbols))
 
-        # print(f'expr1_from_tree: {expr1_from_tree}')
-
-        # print(f'latex(expr1): {latex(expr1_norm)}')
-        # print(f'latex(expr2): {latex(expr2_norm)}')
-        # print(f'common_expressions_latex: {common_expressions_latex}')
-        # print()
+        common_subexpressions, similarity = compare_subtrees(subtrees1, subtrees2, new_symbols)
 
         return {
             "normalized": latex(expr1),
             "finded": formula2,
-            "similarity": calculate_similarity(expr1_from_tree, common_expressions_latex),
-            "commonExpressions": common_expressions_latex,
+            "similarity": calculate_similarity(expr1_from_tree, common_subexpressions),
+            "commonExpressions": common_subexpressions
         }
 
     except Exception as e:
         return {"error": str(e)}
     
 if __name__ == "__main__":
-    # formula1 = r"a^2 + 2ab + b^2"
+    # formula1 = r"a^2 + 2ab"
     # formula2 = r"x^2 + 2xy + y^2"
 
-    # formula1 = r"\sqrt{x^2+32}"
-    # formula2 = r"\sqrt{32+x^2}"
+    formula1 = r"\sqrt{32+x^2}+x"
+    formula2 = r"\sqrt{32+x^2}"
 
-    formula1 = r"888"
-    formula2 = r"888"
+    # formula1 = r"888"
+    # formula2 = r"888"
 
     result = compare_formula_trees(formula1, formula2)
     for key, value in result.items():
