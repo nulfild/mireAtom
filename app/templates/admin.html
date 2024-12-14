@@ -185,6 +185,13 @@
             z-index: 1000;
         }
 
+        .highlight-step {
+            outline: 3px solid #ffcc00; /* Яркая обводка */
+            outline-offset: 3px; /* Расстояние обводки от элемента */
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.8); /* Дополнительное свечение */
+            z-index: 1002; /* Поверх всех элементов */
+        }
+
     </style>
     <!-- Библиотеки для работы с LaTex строками и красивым отображением на странице !-->
     <link rel="stylesheet" href="../static/css/katex.min.css">
@@ -294,6 +301,14 @@
             message: "Обновите список формул, если добавили или удалили элементы.",
         },
         {
+            element: ".btn.edit:nth-child(1)",
+            message: "Нажмите на кнопку, чтобы изменить формулу",
+        },
+        {
+            element: ".btn.delete:nth-child(2)",
+            message: "Нажмите на кнопку, чтобы удалить формулу",
+        },
+        {
             element: ".pagination",
             message: "Используйте пагинацию для переключения между страницами.",
         },
@@ -310,6 +325,11 @@
         const step = steps[stepIndex];
         const element = document.querySelector(step.element);
         const tooltip = document.createElement("div");
+
+        document.querySelectorAll('.highlight-step').forEach(el => {
+            el.classList.remove('highlight-step');
+        });
+        element.classList.add('highlight-step');
 
         tooltip.className = "step-tooltip";
         tooltip.innerHTML = `
@@ -344,7 +364,9 @@
 
         currentStep++;
         if (currentStep < steps.length) {
-            highlightStep(currentStep);
+            if (document.querySelector(steps[currentStep].element) !== null)
+                highlightStep(currentStep);
+            else nextStep()
         } else {
             endTour();
         }
@@ -365,10 +387,10 @@
 
         steps.forEach(step => {
             const element = document.querySelector(step.element);
+            element.classList.remove('highlight-step')
             if (element) element.style.zIndex = "auto";
         });
         tourInProgress = false
-        alert("Тур завершен!");
         document.querySelector(".container").scrollIntoView({behavior: "smooth"})
     }
 
