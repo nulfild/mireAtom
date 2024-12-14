@@ -99,8 +99,8 @@ def subtree_to_expr(tree, parent_expr=None):
     """
 
     if isinstance(tree, str):
-        if parent_expr is None:
-            return
+        # if parent_expr is None:
+            # return
         if tree.isdigit():  # Целое число
             return Integer(int(tree))
         return Symbol(tree)  # Переменная
@@ -200,10 +200,19 @@ def compare_formula_trees(formula1, formula2):
                 expr = expr.subs(new_symbols)
                 common_expressions_latex.append(latex(expr))
 
+        expr1_from_tree = latex(simplify(subtree_to_expr(tree1).subs(new_symbols)))
+
+        # print(f'expr1_from_tree: {expr1_from_tree}')
+
+        # print(f'latex(expr1): {latex(expr1_norm)}')
+        # print(f'latex(expr2): {latex(expr2_norm)}')
+        # print(f'common_expressions_latex: {common_expressions_latex}')
+        # print()
+
         return {
             "normalized": latex(expr1),
             "finded": formula2,
-            "similarity": calculate_similarity(latex(expr1), common_expressions_latex),
+            "similarity": calculate_similarity(expr1_from_tree, common_expressions_latex),
             "commonExpressions": common_expressions_latex,
         }
 
@@ -211,8 +220,14 @@ def compare_formula_trees(formula1, formula2):
         return {"error": str(e)}
     
 if __name__ == "__main__":
-    formula1 = r"a^2 + 2ab + b^2"
-    formula2 = r"x^2 + 2xy + y^2"
+    # formula1 = r"a^2 + 2ab + b^2"
+    # formula2 = r"x^2 + 2xy + y^2"
+
+    # formula1 = r"\sqrt{x^2+32}"
+    # formula2 = r"\sqrt{32+x^2}"
+
+    formula1 = r"888"
+    formula2 = r"888"
 
     result = compare_formula_trees(formula1, formula2)
     for key, value in result.items():
