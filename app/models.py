@@ -14,7 +14,7 @@ class Formula(db.Model):
     """
     __tablename__ = 'formulas'
     id = db.Column(db.Integer, primary_key=True)
-    fullName = db.Column(db.String(100), nullable=False)
+    fullname = db.Column(db.String(100), nullable=False)
     normalized = db.Column(db.String(255), nullable=False)
     expression = db.Column(db.String(255), nullable=False)
     date = db.Column(db.DateTime, nullable = False, default = datetime.today())
@@ -28,7 +28,7 @@ class Formula(db.Model):
         """
         return {
             'id': self.id,
-            'fullName': self.fullName,
+            'fullName': self.fullname,
             'expression': self.expression,
             'normalized': self.normalized,
             'date': self.date

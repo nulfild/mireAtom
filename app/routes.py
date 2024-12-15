@@ -81,7 +81,7 @@ def init_routes(app):
         Returns:
             Response: JSON-ответ с данными формулы
         """
-        formulas = Formula.query.filter(Formula.fullName.ilike(f'%{fullName}%')).all()
+        formulas = Formula.query.filter(Formula.fullname.ilike(f'%{fullName}%')).all()
         return jsonify([formula.to_dict() for formula in formulas])
 
 
@@ -102,12 +102,12 @@ def init_routes(app):
         if not data or 'fullName' not in data or 'expression' not in data:
             return jsonify({'error': 'Неверные данные'}), 400
         
-        formula = Formula.query.filter(Formula.fullName.ilike(data['fullName'])).first()
+        formula = Formula.query.filter(Formula.fullname.ilike(data['fullName'])).first()
         if formula:
             return jsonify({'answer': 'Формула с таким названием уже существует'}), 400
 
         new_formula = Formula(
-                            fullName=data['fullName'], 
+                            fullname=data['fullName'], 
                             normalized=normalize_formula(data['expression']),
                             expression=data['expression'])
         db.session.add(new_formula)
@@ -135,11 +135,11 @@ def init_routes(app):
         if not data:
             return jsonify({'error': 'Неверные данные'}), 400
         
-        last_formula = Formula.query.filter(Formula.fullName.ilike(data['fullName'])).first()
+        last_formula = Formula.query.filter(Formula.fullname.ilike(data['fullName'])).first()
         if last_formula and formula.id != last_formula.id:
             return jsonify({'answer': 'Формула с таким названием уже существует'}), 400
 
-        formula.fullName = data.get('fullName', formula.fullName)
+        formula.fullName = data.get('fullName', formula.fullname)
         formula.expression = data.get('expression', formula.expression)
         formula.normalized = normalize_formula(data.get('expression', formula.expression))
         db.session.commit()
