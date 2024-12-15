@@ -217,8 +217,11 @@ if __name__ == "__main__":
     # formula1 = r"888"
     # formula2 = r"888"
 
-    formula1 = r"(a + b)^2 = a^2 + 2ab + b^2"
-    formula2 = f"a^2 - b^2 = (a - b)(a + b)"
+    # formula1 = r"(a + b)^2 = a^2 + 2ab + b^2"
+    # formula2 = f"a^2 - b^2 = (a - b)(a + b)"
+
+    formula1 = r"f(x) = f(a) + f'(a)(x-a) + \frac{f''(a)}{2!}(x-a)^2 + \cdots + \frac{f^{(n)}(a)}{n!}(x-a)^n + \cdots"
+    formula2 = r"f(x) = f(a) + f'(a)(x-a) + \frac{f''(a)}{2!}(x-a)^2 + \cdots + \frac{f^{(n)}(a)}{n!}(x-a)^n + \cdots"
 
     result = compare_formula_trees(formula1, formula2)
     for key, value in result.items():

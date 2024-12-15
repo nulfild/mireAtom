@@ -187,7 +187,8 @@ def init_routes(app):
             try:
                 compare_result = compare_formula_trees(formula, exist_formula.expression)
                 if 'error' in compare_result:
-                    print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {compare_result.error}')
+                    error = compare_result['error']
+                    print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {error}')
                     continue
                 result.append(compare_result)
             except Exception as e:
