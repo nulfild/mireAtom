@@ -1,35 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Главная</title>
-    <script type="module" src="../static/js/mathlive.min.js"></script>
-    <link rel="stylesheet"  href="../static/css/katex.min.css">
-    <script src="../static/js/katex.min.js"></script>
-    <style>
-        body {
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="icon" type="image/png" href="../static/img/formula.png">
+      <title>FormulaCompare</title>
+      <script type="module" src="../static/js/mathlive.min.js"></script>
+      <link rel="stylesheet" href="../static/css/katex.min.css" />
+      <script src="../static/js/katex.min.js"></script>
+      <style>
+         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f4f4f9;
-        }
+         }
 
-        .container {
+         .container {
             max-width: 800px;
             margin: 50px auto;
             background: white;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 20px;
-        }
+         }
 
-        h1 {
+         h1 {
             text-align: center;
             color: #333;
-        }
+         }
 
-        .button {
+         .button {
             background-color: #007bff;
             color: white;
             border: none;
@@ -38,206 +39,492 @@
             cursor: pointer;
             transition: background-color 0.3s;
             padding: 10px;
-            margin: 10px;
-        }
+         }
 
-        .button:hover {
+         .button-tour {
+            background-color: #eb9808;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            padding: 10px;
+         }
+
+         .button:hover {
             background-color: #0056b3;
-        }
+         }
+         .button-tour:hover {
+            background-color: #d69403;
+         }
 
-        .math-field, input, button {
+         .math-field,
+         input,
+         button {
             margin: 10px 0;
-        }
+         }
 
-        .result {
+         .result {
             color: green;
             font-size: 1.2em;
             margin: 10px 0;
-        }
+         }
 
-        .hidden {
+         .hidden {
             display: none;
-        }
+         }
 
-        input, .math-field {
+         input,
+         .math-field {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
             box-sizing: border-box;
-        }
+         }
 
-        button {
+         button {
             padding: 10px 20px;
             cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <!-- Кнопка перехода в админку -->
-    <button class="button" onclick="window.location.href='/formula'">В админку</button>
+         }
 
-    <!-- MathLive поле для ввода формулы -->
-    <h2>Введите формулу</h2>
-    <math-field id="mathlive-input" style="width: 100%; border: 1px solid #ddd; padding: 10px; font-size: 1.5em; border-radius: 5px; box-sizing: border-box;"></math-field>
+         /** Онбординг (справка) **/
+         [data-tooltip] {
+            position: relative;
+            cursor: pointer;
+         }
 
-    <!-- Поле отображения LaTeX-формулы -->
-    <h2>LaTeX формула</h2>
-    <input type="text" id="latex-output" placeholder="LaTeX формула">
+         [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+         }
 
-    <!-- Кнопки Проверить и Скачать -->
-    <div>
-        <button class="button" id="check-button">Проверить</button>
-        <button class="button" id="download-button">Скачать</button>
-    </div>
+         [data-tooltip]:hover::after {
+            opacity: 1;
+         }
 
-    <!-- Результаты проверки -->
-    <div id="check-result" class="hidden"></div>
+         [data-tooltip]:hover::before {
+            content: "";
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+            z-index: 1000;
+         }
 
-    <!-- Форма для сохранения формулы -->
-    <div id="save-form" class="hidden">
-        <h2>Сохранить формулу</h2>
-        <input type="text" id="formula-name" placeholder="Введите название формулы">
-        <button class="button" id="save-button">Сохранить</button>
-    </div>
-</div>
+         .highlight-step {
+            outline: 3px solid #ffcc00; /* Яркая обводка */
+            outline-offset: 3px; /* Расстояние обводки от элемента */
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.8); /* Дополнительное свечение */
+            z-index: 1002; /* Поверх всех элементов */
+         }
 
-<script>
-    // MathLive поле
-    const mathField = document.getElementById('mathlive-input');
+         /* Кнопка перенаправления на главную страницу */
+         .button-to-main {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            padding: 10px;
+         }
+         .button-to-main:hover {
+            background-color: #0056b3;
+         }
+      </style>
+   </head>
+   <body>
+      <div class="container">
+         <!-- Кнопка перехода в админку -->
+         <button class="button" onclick="window.location.href='/formula'">
+            В админку
+         </button>
 
-    const baseUrl = 'http://localhost:5000'
+         <button class="button-tour" onclick="startTour()">
+            Как пользоваться сайтом?
+         </button>
 
-    // Поле вывода LaTeX
-    const latexOutput = document.getElementById('latex-output');
+         <!-- MathLive поле для ввода формулы -->
+         <h2>Введите формулу</h2>
+         <math-field
+            id="mathlive-input"
+            style="
+               width: 100%;
+               border: 1px solid #ddd;
+               padding: 10px;
+               font-size: 1.5em;
+               border-radius: 5px;
+               box-sizing: border-box;
+            "
+         ></math-field>
 
-    // Синхронизация MathLive -> Поле ввода
-    mathField.addEventListener('input', () => {
-        latexOutput.value = mathField.value; // MathfieldElement имеет свойство `value` для LaTeX
-    });
+         <!-- Поле отображения LaTeX-формулы -->
+         <h2>LaTeX формула</h2>
+         <input type="text" id="latex-output" placeholder="LaTeX формула" required />
 
-    // Синхронизация Поле ввода -> MathLive
-    latexOutput.addEventListener('input', () => {
-        mathField.value = latexOutput.value;
-    });
+         <!-- Кнопки Проверить и Скачать -->
+         <div>
+            <button class="button" id="check-button">Проверить</button>
+            <button class="button" id="download-button">Скачать PNG</button>
+            <button class="button" id="copyML-button">
+               Скопировать MathML формулу
+            </button>
+         </div>
 
-    // Кнопка "Проверить"
-    document.getElementById('check-button').addEventListener('click', async () => {
-        const latex = mathField.value;
+         <!-- Результаты проверки -->
+         <div id="check-result" class="hidden"></div>
 
-        // API-запрос
-        const response = await fetch(`${baseUrl}/api/formulas/compare`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ expression: latex }),
-        });
+         <!-- Форма для сохранения формулы -->
+         <div id="save-form" class="hidden">
+            <h2>Сохранить формулу</h2>
+            <input
+               type="text"
+               id="formula-name"
+               placeholder="Введите название формулы"
+            />
+            <button class="button" id="save-button">Сохранить</button>
+         </div>
+      </div>
 
-        if (!response.ok) {
-            alert('Ошибка при запросе к API!');
-            return;
-        }
+      <script>
+         // MathLive поле
+         const mathField = document.getElementById("mathlive-input");
 
-        const result = await response.json();
+         const baseUrl = "http://localhost:5000";
 
-        // Очистка предыдущих результатов
-        const checkResult = document.getElementById('check-result');
-        const saveForm = document.getElementById('save-form');
-        checkResult.innerHTML = '';
-        saveForm.classList.add('hidden');
+         // Поле вывода LaTeX
+         const latexOutput = document.getElementById("latex-output");
 
-        if (result.commonExpressions) {
-            // Формируем вывод для совпадений
-            checkResult.innerHTML = `
-                <h3>Результаты проверки</h3>
-                <p><strong>Совпадающие части:</strong></p>
-                <ol>
-                ${renderFormulas(result.commonExpressions).map(item => `<li>${item}</li>`).join("")}
-                </ol>
-                <p><strong>Найденная формула:</strong> ${renderFormulas([result.finded])}</p>
-                <p><strong>Нормализованный вид:</strong> ${renderFormulas([result.normalized])}</p>
-                <p><strong>Процент совпадения:</strong> ${result.similarity.toFixed(2)}%</p>
-            `;
-        } else if (result.answer) {
-            // Вывод, если совпадений не найдено
-            checkResult.innerHTML = `<p>${result.answer}</p>`;
-            saveForm.classList.remove('hidden'); // Показываем форму сохранения
-        }
+         // Синхронизация MathLive -> Поле ввода
+         mathField.addEventListener("input", () => {
+            latexOutput.value = mathField.value; // MathfieldElement имеет свойство `value` для LaTeX
+         });
 
-        checkResult.classList.remove('hidden');
-    });
+         // Синхронизация Поле ввода -> MathLive
+         latexOutput.addEventListener("input", () => {
+            mathField.value = latexOutput.value;
+         });
 
-    // Рендер совпавших выражений в красивый вид
-    function renderFormulas(latexFormulas) {
-        return latexFormulas.map(f => katex.renderToString(f, { throwOnError: false }))
-    }
+         // Кнопка "Проверить"
+         document
+            .getElementById("check-button")
+            .addEventListener("click", async () => {
+               const latex = mathField.value;
+               if (latex == "") return;
 
+               // API-запрос
+               const response = await fetch(`${baseUrl}/api/formulas/compare`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ expression: latex }),
+               });
 
-    // Кнопка "Сохранить"
-    document.getElementById('save-button').addEventListener('click', async () => {
-        const formulaName = document.getElementById('formula-name').value;
-        const latex = document.getElementById('latex-output').value;
-        // const latex = mathField.innerText;
+               if (!response.ok) {
+                  alert("Ошибка при запросе к API!");
+                  return;
+               }
 
-        if (!formulaName) {
-            alert('Введите название формулы!');
-            return;
-        }
+               const result = await response.json();
 
-        const response = await fetch('/api/formulas', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({fullName: formulaName, expression: latex }),
-        });
+               // Очистка предыдущих результатов
+               const checkResult = document.getElementById("check-result");
+               const saveForm = document.getElementById("save-form");
+               checkResult.innerHTML = "";
+               saveForm.classList.add("hidden");
 
-        if (response.ok) {
-            alert('Формула сохранена!');
-        } else {
-            alert('Ошибка при сохранении формулы.');
-        }
-    });
+               if (result.commonExpressions) {
+                  // Формируем вывод для совпадений
+                  checkResult.innerHTML = `
+                     <h3>Результаты проверки</h3>
+                     <p><strong>Совпадающие части:</strong></p>
+                     <ol>
+                     ${renderFormulas(result.commonExpressions)
+                        .map((item) => `<li>${item}</li>`)
+                        .join("")}
+                     </ol>
+                     <p><strong>Найденная формула:</strong> ${renderFormulas([
+                        result.finded,
+                     ])}</p>
+                     <p><strong>Нормализованный вид:</strong> ${renderFormulas([
+                        result.normalized,
+                     ])}</p>
+                     <p><strong>Процент совпадения:</strong> ${result.similarity.toFixed(
+                        2
+                     )}%</p>
+                  `;
+                 if (result.similarity < 70) {
+                  saveForm.classList.remove("hidden"); // Показываем форму сохранения
+                 }
+               } else if (result.answer) {
+                  // Вывод, если совпадений не найдено
+                  checkResult.innerHTML = `<p>${result.answer}</p>`;
+                  saveForm.classList.remove("hidden"); // Показываем форму сохранения
+               }
 
-    // Кнопка "Скачать"
-    document.getElementById('download-button').addEventListener('click', () => {
-        const latex = mathField.value;
+               checkResult.classList.remove("hidden");
+            });
 
-        // Создаем холст для рендеринга формулы
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+         // Рендер совпавших выражений в красивый вид
+         function renderFormulas(latexFormulas) {
+            return latexFormulas.map((f) =>
+               katex.renderToString(f, { throwOnError: false })
+            );
+         }
 
-        // Рендерим LaTeX в HTML с помощью KaTeX
-        const renderedHTML = katex.renderToString(latex, { displayMode: true });
+         // Кнопка "Сохранить"
+         document
+            .getElementById("save-button")
+            .addEventListener("click", async () => {
+               const formulaName =
+                  document.getElementById("formula-name").value;
+               const latex = document.getElementById("latex-output").value;
+               // const latex = mathField.innerText;
 
-        // Создаем временный элемент для измерения размеров формулы
-        const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.visibility = 'hidden';
-        tempDiv.innerHTML = renderedHTML;
-        document.body.appendChild(tempDiv);
+               if (!formulaName) {
+                  alert("Введите название формулы!");
+                  return;
+               }
 
-        // Устанавливаем размер холста по размеру формулы
-        canvas.width = tempDiv.offsetWidth + 20; // Дополнительные отступы
-        canvas.height = tempDiv.offsetHeight + 20;
+               const response = await fetch("/api/formulas", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                     fullName: formulaName,
+                     expression: latex,
+                  }),
+               });
 
-        // Очищаем временный элемент
-        document.body.removeChild(tempDiv);
+               if (response.ok) {
+                  alert("Формула сохранена!");
+               } else {
+                  alert("Ошибка при сохранении формулы.");
+               }
+            });
 
-        // Заливаем холст белым цветом
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+         // Кнопка "Скачать"
+         document
+            .getElementById("download-button")
+            .addEventListener("click", () => {
+               const latex = mathField.value; // Получение LaTeX формулы из MathLive
 
-        // Отрисовка текста в формате KaTeX
-        ctx.fillStyle = '#000000';
-        ctx.font = '20px Arial';
-        ctx.fillText(latex, 10, 50);
+               // Создаем временный контейнер для рендеринга формулы
+               const tempDiv = document.createElement("div");
+               tempDiv.style.position = "absolute";
+               tempDiv.style.visibility = "hidden";
+               document.body.appendChild(tempDiv);
 
-        // Скачиваем изображение
-        const link = document.createElement('a');
-        link.download = 'formula.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    });
-</script>
-</body>
+               try {
+                  // Рендерим формулу в красивом виде с помощью KaTeX
+                  tempDiv.innerHTML = katex.renderToString(latex, {
+                     displayMode: true,
+                  });
+
+                  // Создаем холст для рендеринга
+                  const canvas = document.createElement("canvas");
+                  const ctx = canvas.getContext("2d");
+
+                  // Вычисляем размеры формулы
+                  const tempDivRect = tempDiv.getBoundingClientRect();
+                  canvas.width = Math.ceil(tempDivRect.width) + 20; // Добавляем отступы
+                  canvas.height = Math.ceil(tempDivRect.height) + 20;
+
+                  // Заливаем фон белым цветом
+                  ctx.fillStyle = "#FFFFFF";
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                  // Рисуем содержимое формулы на холсте
+                  const data = tempDiv.innerHTML;
+                  const svgBlob = new Blob([data], {
+                     type: "image/svg+xml;charset=utf-8",
+                  });
+                  const url = URL.createObjectURL(svgBlob);
+
+                  const img = new Image();
+                  img.onload = () => {
+                     ctx.drawImage(img, 10, 10); // Добавляем отступы
+                     URL.revokeObjectURL(url);
+
+                     // Конвертируем холст в PNG и скачиваем
+                     const link = document.createElement("a");
+                     link.download = "formula.png";
+                     link.href = canvas.toDataURL("image/png");
+                     link.click();
+
+                     // Удаляем временный контейнер
+                     document.body.removeChild(tempDiv);
+                  };
+                  img.src = url;
+               } catch (err) {
+                  alert("Ошибка рендеринга формулы: " + err.message);
+                  document.body.removeChild(tempDiv);
+               }
+            });
+         // Кнопка "Скопировать MathML формулу"
+         document
+            .getElementById("copyML-button")
+            .addEventListener("click", () => {
+               const latex = mathField.value;
+
+               try {
+                  // Получаем MathML в формате строки
+                  const mathMLWithSpan = katex.renderToString(latex, {
+                     output: "mathml",
+                  });
+
+                  // Извлекаем содержимое MathML без обертки <span>
+                  const mathMLContent = mathMLWithSpan
+                     .replace(/<span[^>]*>/, "") // Удаляем открывающий тег <span>
+                     .replace(/<\/span>$/, ""); // Удаляем закрывающий тег </span>
+
+                  // Копируем MathML в буфер обмена
+                  navigator.clipboard
+                     .writeText(mathMLContent)
+                     .then(() => {
+                        alert("MathML формула скопирована в буфер обмена!");
+                     })
+                     .catch((err) => {
+                        console.error("Ошибка при копировании MathML:", err);
+                     });
+               } catch (err) {
+                  alert("Ошибка при генерации MathML: " + err.message);
+               }
+            });
+
+         // Онбординг (справка)
+         const steps = [
+            {
+               element: ".button",
+               message: "Здесь вы можете перейти в панель администратора.",
+            },
+            {
+               element: "#mathlive-input",
+               message: "Здесь вы можете создать формулу в привычном формате.",
+            },
+            {
+               element: "#latex-output",
+               message:
+                  "Здесь вы можете смотреть LaTeX формат вашей формулы и изменять его.",
+            },
+            {
+               element: "#check-button",
+               message:
+                  "Здесь вы можете проверить вашу формулу на уникальность.",
+            },
+            {
+               element: "#download-button",
+               message: "Здесь вы можете скачать формулу в формате PNG.",
+            },
+            {
+               element: "#copyML-button",
+               message:
+                  "Здесь вы можете скопировать вашу формулу в формате MathML.",
+            },
+         ];
+         // Текущий шаг
+         let currentStep = 0;
+
+         // Флаг того, что онбординг в процессе (чтобы не плодить новых)
+         let tourInProgress = false;
+
+         // Функция для подсвечивания шага
+         function highlightStep(stepIndex) {
+            const step = steps[stepIndex];
+            const element = document.querySelector(step.element);
+            const tooltip = document.createElement("div");
+
+            document.querySelectorAll(".highlight-step").forEach((el) => {
+               el.classList.remove("highlight-step");
+            });
+            element.classList.add("highlight-step");
+
+            tooltip.className = "step-tooltip";
+            tooltip.innerHTML = `
+    <div class="tooltip-arrow"></div>
+    <div class="tooltip-message">${step.message}</div>
+    <button class='button-to-main' onclick="nextStep()">Далее</button>
+`;
+
+            tooltip.style.position = "absolute";
+            tooltip.style.top = `${
+               element.getBoundingClientRect().bottom + window.scrollY + 10
+            }px`;
+            tooltip.style.left = `${
+               element.getBoundingClientRect().left + window.scrollX
+            }px`;
+            tooltip.style.background = "wheat";
+            tooltip.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+            tooltip.style.border = "1px solid #ddd";
+            tooltip.style.padding = "10px";
+            tooltip.style.borderRadius = "5px";
+            tooltip.style.zIndex = "1000";
+            tooltip.style.fontSize = "1.5em";
+
+            element.style.position = "relative";
+            element.style.zIndex = "1001";
+
+            if (step.element === ".pagination")
+               document
+                  .querySelector(step.element)
+                  .scrollIntoView({ behavior: "smooth" });
+            document.body.appendChild(tooltip);
+         }
+
+         // Процесс отображения онбординга по шагам
+         function nextStep() {
+            const previousTooltip = document.querySelector(".step-tooltip");
+            if (previousTooltip) previousTooltip.remove();
+
+            currentStep++;
+            if (currentStep < steps.length) {
+               if (document.querySelector(steps[currentStep].element) !== null)
+                  highlightStep(currentStep);
+               else nextStep();
+            } else {
+               endTour();
+            }
+         }
+
+         // Начало онбординга (нажата кнопка "Справка")
+         function startTour() {
+            if (tourInProgress === true) return;
+            currentStep = 0;
+            highlightStep(currentStep);
+            tourInProgress = true;
+         }
+         // Онбординг завершен
+         function endTour() {
+            const previousTooltip = document.querySelector(".step-tooltip");
+            if (previousTooltip) previousTooltip.remove();
+
+            steps.forEach((step) => {
+               const element = document.querySelector(step.element);
+               element.classList.remove("highlight-step");
+               if (element) element.style.zIndex = "auto";
+            });
+            tourInProgress = false;
+            document
+               .querySelector(".container")
+               .scrollIntoView({ behavior: "smooth" });
+         }
+      </script>
+   </body>
 </html>
