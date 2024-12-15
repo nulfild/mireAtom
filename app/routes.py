@@ -1,5 +1,6 @@
 from flask import jsonify, request, render_template
 from flask_cors import cross_origin
+import concurrent.futures
 from app.models import Formula
 from app.db import db
 
@@ -185,7 +186,9 @@ def init_routes(app):
         result = []
         for exist_formula in formulas:
             try:
-                compare_result = compare_formula_trees(formula, exist_formula.expression)
+                # compare_result = compare_formula_trees(formula, exist_formula.expression)
+                compare_result = run_with_timeout(compare_formula_trees, (formula, exist_formula.expression), 60)
+                if compare_result is None: continue
                 if 'error' in compare_result:
                     error = compare_result['error']
                     print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {error}')
@@ -203,3 +206,12 @@ def init_routes(app):
             return jsonify({'answer': 'Совпадений не найдено'}), 200
 
         return jsonify(result), 200
+    
+    def run_with_timeout(func, args, timeout):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(func, *args)
+            try:
+                return future.result(timeout=timeout)
+            except concurrent.futures.TimeoutError:
+                print("Функция превысила время выполнения")
+                return None
