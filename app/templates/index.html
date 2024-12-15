@@ -3,11 +3,17 @@
    <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="icon" type="image/png" href="../static/img/formula.png">
+      <link rel="icon" type="image/png" href="../static/img/formula.png" />
       <title>FormulaCompare</title>
       <script type="module" src="../static/js/mathlive.min.js"></script>
       <link rel="stylesheet" href="../static/css/katex.min.css" />
       <script src="../static/js/katex.min.js"></script>
+      <script src="../static/js/html2canvas.min.js"></script>
+      <script
+         id="MathJax-script"
+         async
+         src="../static/js/tex-svg.js"
+      ></script>
       <style>
          body {
             font-family: Arial, sans-serif;
@@ -150,6 +156,35 @@
          .button-to-main:hover {
             background-color: #0056b3;
          }
+         #formula-container {
+            position: absolute;
+            top: -1000px; /* Перемещаем контейнер вне видимой области */
+            left: -1000px;
+            /* visibility: hidden; Скрываем визуально */
+            background-color: white;
+            padding: 10px;
+         }
+         .spinner {
+            border: 4px solid #f3f3f3; /* Light gray */
+            border-top: 4px solid #007bff; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+         }
+
+         @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+         }
+
+         #loading-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+         }
       </style>
    </head>
    <body>
@@ -176,10 +211,16 @@
                box-sizing: border-box;
             "
          ></math-field>
+         <div id="formula-container"></div>
 
          <!-- Поле отображения LaTeX-формулы -->
          <h2>LaTeX формула</h2>
-         <input type="text" id="latex-output" placeholder="LaTeX формула" required />
+         <input
+            type="text"
+            id="latex-output"
+            placeholder="LaTeX формула"
+            required
+         />
 
          <!-- Кнопки Проверить и Скачать -->
          <div>
@@ -189,6 +230,13 @@
                Скопировать MathML формулу
             </button>
          </div>
+
+         <div id="loading-indicator" style="display: none">
+            <div class="spinner"></div>
+            <div class="spinner-text">Ожидание может занять до минуты...</div>
+         </div>
+
+         <canvas id="formula-canvas" style="display: none"></canvas>
 
          <!-- Результаты проверки -->
          <div id="check-result" class="hidden"></div>
@@ -231,6 +279,9 @@
                const latex = mathField.value;
                if (latex == "") return;
 
+               const loadingIndicator =
+                  document.getElementById("loading-indicator");
+               loadingIndicator.style.display = "flex";
                // API-запрос
                const response = await fetch(`${baseUrl}/api/formulas/compare`, {
                   method: "POST",
@@ -248,38 +299,40 @@
                // Очистка предыдущих результатов
                const checkResult = document.getElementById("check-result");
                const saveForm = document.getElementById("save-form");
+               
                checkResult.innerHTML = "";
                saveForm.classList.add("hidden");
 
                if (result.commonExpressions) {
                   // Формируем вывод для совпадений
                   checkResult.innerHTML = `
-                     <h3>Результаты проверки</h3>
-                     <p><strong>Совпадающие части:</strong></p>
-                     <ol>
-                     ${renderFormulas(result.commonExpressions)
-                        .map((item) => `<li>${item}</li>`)
-                        .join("")}
-                     </ol>
-                     <p><strong>Найденная формула:</strong> ${renderFormulas([
-                        result.finded,
-                     ])}</p>
-                     <p><strong>Нормализованный вид:</strong> ${renderFormulas([
-                        result.normalized,
-                     ])}</p>
-                     <p><strong>Процент совпадения:</strong> ${result.similarity.toFixed(
-                        2
-                     )}%</p>
-                  `;
-                 if (result.similarity < 70) {
-                  saveForm.classList.remove("hidden"); // Показываем форму сохранения
-                 }
+                              <h3>Результаты проверки</h3>
+                               <p><strong>Нормализованный вид вашей формулы:</strong> ${renderFormulas(
+                                  [result.normalized]
+                               )}</p>
+                              <p><strong>Совпадающие части:</strong></p>
+                              <ol>
+                              ${renderFormulas(result.commonExpressions)
+                                 .map((item) => `<li>${item}</li>`)
+                                 .join("")}
+                              </ol>
+                              <p><strong>Найденная формула:</strong> ${renderFormulas(
+                                 [result.finded]
+                              )}</p>
+                     
+                              <p><strong>Процент совпадения:</strong> ${result.similarity.toFixed(
+                                 2
+                              )}%</p>
+                           `;
+                  if (result.similarity < 70) {
+                     saveForm.classList.remove("hidden"); // Показываем форму сохранения
+                  }
                } else if (result.answer) {
                   // Вывод, если совпадений не найдено
                   checkResult.innerHTML = `<p>${result.answer}</p>`;
                   saveForm.classList.remove("hidden"); // Показываем форму сохранения
                }
-
+               loadingIndicator.style.display = "none";
                checkResult.classList.remove("hidden");
             });
 
@@ -324,58 +377,25 @@
          document
             .getElementById("download-button")
             .addEventListener("click", () => {
-               const latex = mathField.value; // Получение LaTeX формулы из MathLive
-
-               // Создаем временный контейнер для рендеринга формулы
-               const tempDiv = document.createElement("div");
-               tempDiv.style.position = "absolute";
-               tempDiv.style.visibility = "hidden";
-               document.body.appendChild(tempDiv);
+               const latex = mathField.value;
+               const container = document.getElementById("formula-container");
 
                try {
-                  // Рендерим формулу в красивом виде с помощью KaTeX
-                  tempDiv.innerHTML = katex.renderToString(latex, {
-                     displayMode: true,
-                  });
+                  // Рендеринг формулы в скрытом контейнере
+                  katex.render(latex, container, { throwOnError: false });
 
-                  // Создаем холст для рендеринга
-                  const canvas = document.createElement("canvas");
-                  const ctx = canvas.getContext("2d");
-
-                  // Вычисляем размеры формулы
-                  const tempDivRect = tempDiv.getBoundingClientRect();
-                  canvas.width = Math.ceil(tempDivRect.width) + 20; // Добавляем отступы
-                  canvas.height = Math.ceil(tempDivRect.height) + 20;
-
-                  // Заливаем фон белым цветом
-                  ctx.fillStyle = "#FFFFFF";
-                  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                  // Рисуем содержимое формулы на холсте
-                  const data = tempDiv.innerHTML;
-                  const svgBlob = new Blob([data], {
-                     type: "image/svg+xml;charset=utf-8",
-                  });
-                  const url = URL.createObjectURL(svgBlob);
-
-                  const img = new Image();
-                  img.onload = () => {
-                     ctx.drawImage(img, 10, 10); // Добавляем отступы
-                     URL.revokeObjectURL(url);
-
-                     // Конвертируем холст в PNG и скачиваем
-                     const link = document.createElement("a");
-                     link.download = "formula.png";
-                     link.href = canvas.toDataURL("image/png");
-                     link.click();
-
-                     // Удаляем временный контейнер
-                     document.body.removeChild(tempDiv);
-                  };
-                  img.src = url;
-               } catch (err) {
-                  alert("Ошибка рендеринга формулы: " + err.message);
-                  document.body.removeChild(tempDiv);
+                  // Преобразование содержимого контейнера в PNG
+                  html2canvas(container, { backgroundColor: null }).then(
+                     (canvas) => {
+                        // Генерация PNG
+                        const link = document.createElement("a");
+                        link.href = canvas.toDataURL("image/png");
+                        link.download = "formula.png";
+                        link.click();
+                     }
+                  );
+               } catch (error) {
+                  console.error("Ошибка рендеринга LaTeX:", error);
                }
             });
          // Кнопка "Скопировать MathML формулу"
@@ -458,10 +478,10 @@
 
             tooltip.className = "step-tooltip";
             tooltip.innerHTML = `
-    <div class="tooltip-arrow"></div>
-    <div class="tooltip-message">${step.message}</div>
-    <button class='button-to-main' onclick="nextStep()">Далее</button>
-`;
+             <div class="tooltip-arrow"></div>
+             <div class="tooltip-message">${step.message}</div>
+             <button class='button-to-main' onclick="nextStep()">Далее</button>
+         `;
 
             tooltip.style.position = "absolute";
             tooltip.style.top = `${
