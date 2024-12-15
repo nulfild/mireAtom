@@ -182,22 +182,10 @@ def init_routes(app):
         formula = data['expression']
 
         formulas = Formula.query.all()
-        
-        result = []
-        for exist_formula in formulas:
-            try:
-                # compare_result = compare_formula_trees(formula, exist_formula.expression)
-                compare_result = run_with_timeout(compare_formula_trees, (formula, exist_formula.expression), 60)
-                if compare_result is None: continue
-                if 'error' in compare_result:
-                    error = compare_result['error']
-                    print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {error}')
-                    continue
-                result.append(compare_result)
-            except Exception as e:
-                print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {e}')
 
-        if len(result) == 0:
+        result = run_with_timeout(compare_all_formuls, (formula, formulas), 60)
+
+        if result is None or len(result) == 0:
             return jsonify({'answer': 'Совпадений не найдено'}), 200
         
         result = sorted(result, key=lambda res: res['similarity'], reverse=True)[0]
@@ -206,6 +194,21 @@ def init_routes(app):
             return jsonify({'answer': 'Совпадений не найдено'}), 200
 
         return jsonify(result), 200
+    
+    def compare_all_formuls(formula, formulas):
+        result = []
+        for exist_formula in formulas:
+            try:
+                compare_result = compare_formula_trees(formula, exist_formula.expression)
+                if compare_result is None: continue
+                if 'error' in compare_result:
+                    error = compare_result['error']
+                    print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {error}')
+                    continue
+                result.append(compare_result)
+            except Exception as e:
+                print(f'При проверки формул ({formula} и {exist_formula}) произошла ошибка: {e}')
+        return result
     
     def run_with_timeout(func, args, timeout):
         with concurrent.futures.ThreadPoolExecutor() as executor:
