@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="icon" type="image/png" href="../static/img/formula.png">
+      <title>FormulaCompare</title>
+      <style>
+         /* Основные стили body и контейнера */
+         body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+         }
+
+         .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+         }
+
+         h1 {
+            text-align: center;
+            color: #333;
+         }
+
+         /* Стили для таблицы с формулами */
+         table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+         }
+
+         table th,
+         table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+         }
+
+         table th {
+            background-color: #f4f4f9;
+            color: #333;
+         }
+
+         /* Стили меню пагинации */
+         .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+         }
+
+         .pagination button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            margin: 0 5px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+         }
+
+         .pagination button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+         }
+
+         /* Стиль кнопки обновления списка формул */
+         .refresh-button {
+            margin: 0 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+         }
+
+         .refresh-button:hover {
+            background-color: #218838;
+         }
+
+         /* Стили элементов поиска формул */
+         .search-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+         }
+
+         .search-container input {
+            width: 100%;
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+         }
+
+         .search-container button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+         }
+
+         .search-container button:hover {
+            background-color: #0056b3;
+         }
+
+         /* Стили кнопок */
+         .btn {
+            margin: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+         }
+         .btn.edit {
+            background-color: #0794ff;
+            color: white;
+         }
+         .btn.delete {
+            background-color: #dc3545;
+            color: white;
+         }
+         .btn.save {
+            background-color: #3596dc;
+            color: white;
+         }
+
+         /* Стили модального окна добавления или редактирования формулы */
+         .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+         }
+         .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 500px;
+         }
+         .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 5px 0;
+         }
+         .modal-header h2 {
+            margin: 0;
+         }
+         .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+         }
+         .modal-div {
+            margin: 5px;
+         }
+
+         /* Кнопка перенаправления на главную страницу */
+         .button-to-main {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            padding: 10px;
+         }
+         .button-to-main:hover {
+            background-color: #0056b3;
+         }
+
+         .button-tour {
+            background-color: #eb9808;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            padding: 10px;
+         }
+
+         .button-tour:hover {
+            background-color: #d69403;
+         }
+
+         label {
+            font-size: 1.5em;
+            margin: 5px 0;
+         }
+
+         /** Онбординг (справка) **/
+         [data-tooltip] {
+            position: relative;
+            cursor: pointer;
+         }
+
+         [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+         }
+
+         [data-tooltip]:hover::after {
+            opacity: 1;
+         }
+
+         [data-tooltip]:hover::before {
+            content: "";
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+            z-index: 1000;
+         }
+
+         .highlight-step {
+            outline: 3px solid #ffcc00; /* Яркая обводка */
+            outline-offset: 3px; /* Расстояние обводки от элемента */
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.8); /* Дополнительное свечение */
+            z-index: 1002; /* Поверх всех элементов */
+         }
+      </style>
+      <!-- Библиотеки для работы с LaTex строками и красивым отображением на странице !-->
+      <link rel="stylesheet" href="../static/css/katex.min.css" />
+      <script src="../static/js/katex.min.js"></script>
+   </head>
+   <body>
+      <div class="container">
+         <!-- Перенаправление на главную и название страницы !-->
+         <div style="display: inline-block">
+            <button
+               class="button-to-main"
+               onclick="window.location.href='http://localhost:5000/'"
+            >
+               Перейти на главную
+            </button>
+            <button class="button-tour" onclick="startTour()">
+               Как пользоваться сайтом?
+            </button>
+            <h2 style="margin-bottom: 0">Управление формулами</h2>
+         </div>
+         <!-- Поле поиска формул по названию !-->
+         <div class="search-container">
+            <input
+               type="text"
+               id="search-input"
+               placeholder="Введите название формулы"
+            />
+            <button onclick="searchFormulas()">Поиск</button>
+         </div>
+         <!-- Кнопки добавления, обновления и подсказок !-->
+         <div style="display: inline-flex">
+            <button
+               class="button-to-main"
+               id="createFormulaButton"
+               onclick="openCreateModal()"
+            >
+               Добавить формулу
+            </button>
+            <button class="refresh-button" onclick="refreshFormulas()">
+               Обновить список формул
+            </button>
+         </div>
+
+         <!-- Таблица, в которой будут отображаться формулы !-->
+         <table>
+            <thead>
+               <tr>
+                  <th>ID</th>
+                  <th>Название формулы</th>
+                  <th>Выражение</th>
+                  <th>Дата добавления формулы</th>
+                  <th>Действия</th>
+               </tr>
+            </thead>
+            <tbody id="formulas-table">
+               <tr>
+                  <td colspan="5" style="text-align: center">Загрузка...</td>
+               </tr>
+            </tbody>
+         </table>
+         <!-- Контейнер с элементами пагинации !-->
+         <div class="pagination" id="pagination"></div>
+      </div>
+
+      <!-- Модальное окно для добавления/изменения формул !-->
+      <div id="editModal" class="modal">
+         <div class="modal-content">
+            <div class="modal-header">
+               <!-- заголовок модального окна определяется в зависимости от операции !-->
+               <h2 id="modal-name"></h2>
+            </div>
+            <div class="modal-div">
+               <label for="formulaName">Название формулы</label>
+               <input
+                  type="text"
+                  id="formulaName"
+                  style="width: 100%; line-height: 2em; font-size: 1.25em"
+               />
+            </div>
+            <div class="modal-div">
+               <!-- Поле для ввода LaTex строки !-->
+               <label for="formulaExpression">LaTeX выражение</label>
+               <input
+                  type="text"
+                  id="formulaExpression"
+                  style="width: 100%; line-height: 2em; font-size: 1.25em"
+                  oninput="updateRenderedFormula()"
+               />
+            </div>
+            <div>
+               <!-- Отрендеренное красивое отображение формулы (рендер Latex строки) !-->
+               <p style="font-size: 1.25em">Формула:</p>
+               <div
+                  id="renderedFormula"
+                  style="
+                     background-color: #f4f4f9;
+                     padding: 20px;
+                     border-radius: 5px;
+                     margin: 20px 0;
+                     font-size: 1.25em;
+                  "
+               ></div>
+            </div>
+            <div class="modal-footer">
+               <button class="btn save" onclick="saveOrEditFormula()">
+                  Сохранить
+               </button>
+               <button class="btn" onclick="closeModal()">Отмена</button>
+            </div>
+            <p id="error-message" style="color: red; display: none"></p>
+         </div>
+      </div>
+
+      <script>
+         const apiUrl = "http://localhost:5000/api/formulas";
+
+         let currentPage = 1; // Текущая страница
+         const itemsPerPage = 10; // Количество элементов на странице
+
+         let allFormulas = []; // Список всех формул
+
+         let currentEditingFormula = null; // Флаг редактирования формулы
+
+         // Для удобства выполняем поиск при нажатии enter
+         const searchInput = document.getElementById("search-input");
+         searchInput.addEventListener("keypress", function (event) {
+            if (event.key === "Enter") {
+               event.preventDefault();
+               searchFormulas();
+            }
+         });
+
+         // Онбординг (справка)
+         const steps = [
+            {
+               element: ".search-container input",
+               message: "Здесь вы можете искать формулы по названию.",
+            },
+            {
+               element: "#createFormulaButton",
+               message: "Нажмите здесь, чтобы добавить новую формулу.",
+            },
+            {
+               element: ".refresh-button",
+               message:
+                  "Обновите список формул, если добавили или удалили элементы.",
+            },
+            {
+               element: ".btn.edit:nth-child(1)",
+               message: "Нажмите на кнопку, чтобы изменить формулу",
+            },
+            {
+               element: ".btn.delete:nth-child(2)",
+               message: "Нажмите на кнопку, чтобы удалить формулу",
+            },
+            {
+               element: ".pagination",
+               message:
+                  "Используйте пагинацию для переключения между страницами.",
+            },
+         ];
+
+         // Текущий шаг
+         let currentStep = 0;
+
+         // Флаг того, что онбординг в процессе (чтобы не плодить новых)
+         let tourInProgress = false;
+
+         // Функция для подсвечивания шага
+         function highlightStep(stepIndex) {
+            const step = steps[stepIndex];
+            const element = document.querySelector(step.element);
+            const tooltip = document.createElement("div");
+
+            document.querySelectorAll(".highlight-step").forEach((el) => {
+               el.classList.remove("highlight-step");
+            });
+            element.classList.add("highlight-step");
+
+            tooltip.className = "step-tooltip";
+            tooltip.innerHTML = `
+        <div class="tooltip-arrow"></div>
+        <div class="tooltip-message">${step.message}</div>
+        <button class='button-to-main' onclick="nextStep()">Далее</button>
+    `;
+
+            tooltip.style.position = "absolute";
+            tooltip.style.top = `${
+               element.getBoundingClientRect().bottom + window.scrollY + 10
+            }px`;
+            tooltip.style.left = `${
+               element.getBoundingClientRect().left + window.scrollX
+            }px`;
+            tooltip.style.background = "wheat";
+            tooltip.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+            tooltip.style.border = "1px solid #ddd";
+            tooltip.style.padding = "10px";
+            tooltip.style.borderRadius = "5px";
+            tooltip.style.zIndex = "1000";
+            tooltip.style.fontSize = "1.5em";
+
+            element.style.position = "relative";
+            element.style.zIndex = "1001";
+
+            if (step.element === ".pagination")
+               document
+                  .querySelector(step.element)
+                  .scrollIntoView({ behavior: "smooth" });
+            document.body.appendChild(tooltip);
+         }
+
+         // Процесс отображения онбординга по шагам
+         function nextStep() {
+            const previousTooltip = document.querySelector(".step-tooltip");
+            if (previousTooltip) previousTooltip.remove();
+
+            currentStep++;
+            if (currentStep < steps.length) {
+               if (document.querySelector(steps[currentStep].element) !== null)
+                  highlightStep(currentStep);
+               else nextStep();
+            } else {
+               endTour();
+            }
+         }
+
+         // Начало онбординга (нажата кнопка "Справка")
+         function startTour() {
+            if (tourInProgress === true) return;
+            currentStep = 0;
+            highlightStep(currentStep);
+            tourInProgress = true;
+         }
+
+         // Онбординг завершен
+         function endTour() {
+            const previousTooltip = document.querySelector(".step-tooltip");
+            if (previousTooltip) previousTooltip.remove();
+
+            steps.forEach((step) => {
+               const element = document.querySelector(step.element);
+               element.classList.remove("highlight-step");
+               if (element) element.style.zIndex = "auto";
+            });
+            tourInProgress = false;
+            document
+               .querySelector(".container")
+               .scrollIntoView({ behavior: "smooth" });
+         }
+
+         let isEditingFormula;
+
+         // Вызов нужной функции добавления или редактирования формулы
+         function saveOrEditFormula(formula) {
+            console.log(formula);
+            if (isEditingFormula === true) editFormula(formula);
+            else saveFormula();
+         }
+
+         // Добавление новой формулы
+         async function saveFormula() {
+            const name = document.getElementById("formulaName").value;
+            const expression =
+               document.getElementById("formulaExpression").value;
+            const response = await fetch(`${apiUrl}`, {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({ fullName: name, expression }),
+            });
+
+            if (response.ok) {
+               alert("Формула добавлена");
+               closeModal();
+               refreshFormulas();
+            } else {
+               const error = await response.json();
+               document.getElementById("error-message").textContent =
+                  error.answer;
+               document.getElementById("error-message").style.display = "block";
+            }
+         }
+
+         isEditingFormula = false;
+
+         // Отображение модального окна при редактировании формулы
+         function openEditModal(formula) {
+            currentEditingFormula = formula;
+            isEditingFormula = true;
+            document.getElementById("modal-name").innerText =
+               "Редактировать формулу";
+            document.getElementById("formulaName").value = formula.fullName;
+            document.getElementById("formulaExpression").value =
+               formula.expression;
+            updateRenderedFormula();
+            const modal = document.getElementById("editModal");
+            modal.style.display = "flex";
+         }
+
+         // Отображение модального окна при создании формулы
+         function openCreateModal() {
+            document.getElementById("modal-name").innerText =
+               "Добавить формулу";
+            isEditingFormula = false;
+            updateRenderedFormula();
+            const modal = document.getElementById("editModal");
+            modal.style.display = "flex";
+         }
+
+         // Закрытие модального окна
+         function closeModal() {
+            const modal = document.getElementById("editModal");
+            modal.style.display = "none";
+            document.getElementById("formulaName").value = "";
+            document.getElementById("formulaExpression").value = "";
+            document.getElementById("error-message").style.display = "none";
+         }
+
+         // Динамическое отображение отрендеренной формулы при вводе в модальном окне
+         function updateRenderedFormula() {
+            const formula = document.getElementById("formulaExpression").value;
+            const renderDiv = document.getElementById("renderedFormula");
+            try {
+               renderDiv.innerHTML = katex.renderToString(formula, {
+                  throwOnError: false,
+               });
+            } catch (error) {
+               renderDiv.textContent = "Ошибка в рендеринге формулы";
+            }
+         }
+
+         // Запрос на удаление формулы
+         async function deleteFormula(id) {
+            if (confirm("Вы уверены, что хотите удалить эту формулу?")) {
+               const response = await fetch(`${apiUrl}/${id}`, {
+                  method: "DELETE",
+               });
+               if (response.ok) {
+                  refreshFormulas();
+               } else {
+                  alert("Ошибка при удалении формулы");
+               }
+            }
+         }
+         // Запрос на изменение формулы
+         async function editFormula() {
+            const name = document.getElementById("formulaName").value;
+            const expression =
+               document.getElementById("formulaExpression").value;
+            const response = await fetch(
+               `${apiUrl}/${currentEditingFormula.id}`,
+               {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ fullName: name, expression }),
+               }
+            );
+
+            if (response.ok) {
+               alert("Формула обновлена");
+               closeModal();
+               refreshFormulas();
+            } else {
+               const error = await response.json();
+               document.getElementById("error-message").textContent =
+                  error.answer;
+               document.getElementById("error-message").style.display = "block";
+            }
+         }
+         // Запрос на список всех формул
+         async function fetchFormulas(query = "") {
+            const url = query
+               ? `${apiUrl}/${encodeURIComponent(query)}`
+               : apiUrl;
+            const response = await fetch(url);
+            if (!response.ok) {
+               console.error("Failed to fetch formulas.");
+               return [];
+            }
+            return await response.json();
+         }
+
+         // Пагинация формул
+         function getPaginatedFormulas(page, perPage) {
+            const start = (page - 1) * perPage;
+            const end = start + perPage;
+            return allFormulas.slice(start, end);
+         }
+
+         // Заполнение таблицы формулами после получения с бэка
+         function renderFormulas(formulas) {
+            const tableBody = document.getElementById("formulas-table");
+            tableBody.innerHTML = "";
+
+            if (formulas.length === 0) {
+               tableBody.innerHTML =
+                  '<tr><td colspan="4" style="text-align: center;">No formulas found.</td></tr>';
+               return;
+            }
+
+            formulas.forEach((formula) => {
+               const row = document.createElement("tr");
+               const prettyFormula = katex.renderToString(formula.expression, {
+                  throwOnError: false,
+               });
+               row.innerHTML = `
+                    <td>${formula.id}</td>
+                    <td>${formula.fullName}</td>
+                    <td style="width: 300px;">${prettyFormula}</td>
+                    <td>${new Date(formula.date).toLocaleDateString()}</td>
+                    <td>
+                    <button class="btn edit" onclick='openEditModal(${JSON.stringify(
+                       formula
+                    )})'>Изменить</button>
+                    <button class="btn delete" onclick='deleteFormula(${
+                       formula.id
+                    })'>Удалить</button>
+                </td>
+                `;
+               tableBody.appendChild(row);
+            });
+         }
+
+         // Поиск формул по названию
+         async function searchFormulas() {
+            const query = document.getElementById("search-input").value.trim();
+            if (query === "") allFormulas = await fetchFormulas();
+            else allFormulas = await fetchFormulas(query);
+            currentPage = 1; // Reset to the first page after search
+            updateTable();
+         }
+
+         // Обновление содержимого таблицы
+         async function updateTable() {
+            const totalPages = Math.ceil(allFormulas.length / itemsPerPage);
+            const paginatedFormulas = getPaginatedFormulas(
+               currentPage,
+               itemsPerPage
+            );
+            renderFormulas(paginatedFormulas);
+            renderPagination(totalPages);
+         }
+
+         // Обновление меню пагинации при изменении списка формул
+         function renderPagination(totalPages) {
+            const pagination = document.getElementById("pagination");
+            pagination.innerHTML = "";
+
+            const createButton = (page, text, disabled = false) => {
+               const button = document.createElement("button");
+               button.textContent = text;
+               button.disabled = disabled;
+               button.onclick = () => {
+                  currentPage = page;
+                  updateTable();
+               };
+               pagination.appendChild(button);
+            };
+
+            createButton(currentPage - 1, "Предыдущая", currentPage === 1);
+
+            for (let i = 1; i <= totalPages; i++) {
+               const button = document.createElement("button");
+               button.textContent = i;
+               button.disabled = i === currentPage;
+               button.onclick = () => {
+                  currentPage = i;
+                  updateTable();
+               };
+               pagination.appendChild(button);
+            }
+
+            createButton(
+               currentPage + 1,
+               "Следующая",
+               currentPage === totalPages
+            );
+         }
+
+         // Обновить формулы
+         async function refreshFormulas() {
+            const searchInput = document.getElementById("search-input");
+            searchInput.value = "";
+            initialize();
+         }
+
+         // Инициализация при загрузке страницы
+         async function initialize() {
+            allFormulas = await fetchFormulas();
+            updateTable();
+         }
+
+         initialize();
+      </script>
+   </body>
+</html>

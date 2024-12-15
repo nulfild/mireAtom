@@ -1,0 +1,251 @@
+openapi: 3.0.0
+info:
+  description: 'Сохранение и редактирование формул в базе данных'
+  version: "1.0.0"
+  title: 'Редактор формул'
+servers:
+    - url: http://localhost:5000/api
+      description: Dev server
+    
+paths:
+  /formulas:
+    get:
+      tags:
+        - formulas
+      summary: Получить список формул
+      description: Возвращает список всех формул из базы данных в формате JSON.
+      operationId: getFormulas
+      responses:
+        '200':
+          description: Успешный ответ с JSON-списком формул.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Formula'
+    post:
+      tags:
+        - formulas
+      summary: Добавить новую формулу в базу данных
+      description: Создает новую формулу в базе данных
+      operationId: addFormula
+      responses:
+        '201':
+          description: 'Формула добавлена'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Formula'
+        '400':
+          description: 'некорректный ввод'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  description: Название формулы
+                expression:
+                  type: string
+                  description: Текстовое представление формулы.
+              example:
+                name: "Test"
+                expression: "x^2 + 2xy + y^2"
+        description: 'Новая формула добавлена'
+                  
+  /formulas/{id}:
+    get:
+      tags:
+        - formulas
+      summary: Получить формулу по ID
+      description: Возвращает данные конкретной формулы по её ID.
+      operationId: getFormulaById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор формулы.
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Успешный ответ с данными формулы в формате JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Formula'
+        '404':
+          description: Формула с указанным ID не найдена.
+          
+    put:
+      tags:
+        - formulas
+      summary: Обновить существующую формулу по её ID
+      description: Обновляет формулу в базе данных
+      operationId: updateFormula
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор формулы.
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '201':
+          description: 'Формула обновлена'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Formula'
+        '400':
+          description: 'Неверные данные'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  description: Название формулы
+                expression:
+                  type: string
+                  description: Текстовое представление формулы.
+              example:
+                name: "Test"
+                expression: "x^2 + 2xy + y^2"
+        description: 'Формула обновлена'
+        
+    delete:
+      tags:
+        - formulas
+      summary: Удалить формулу по ID
+      description: Удаляет формулу по её ID.
+      operationId: deleteFormulaById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор формулы.
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Успешный ответ в формате JSON.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Сообщение об успехе
+                example:
+                  message: "Формула с ID 1 удалена"
+        '404':
+          description: Формула с указанным ID не найдена.
+
+  /formulas/{fullName}:
+    get:
+      tags:
+        - formulas
+      summary: Получить формулу по названию
+      description: Возвращает список формул с похожим названием
+      operationId: getFormulaByFullName
+      parameters:
+        - name: fullName
+          in: path
+          required: true
+          description: Название формулы
+          schema:
+            type: string
+            example: Test
+      responses:
+        '200':
+          description: Успешный ответ с данными формул в формате JSON.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Formula'
+                  
+  /formulas/compare:
+    post:
+      tags:
+        - formulas
+      summary: Проверить формулу на совпадения
+      description: Проверяет формулу на совпадения в базе данных
+      operationId: compareFormula
+      responses:
+        '200':
+          description: 'Формула проверена'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  commonExpressions:
+                    type: array
+                    description: Совпадающие части
+                    items:
+                      type: string
+                  finded:
+                    type: string
+                    description: Найденная в бд формула
+                  normalized:
+                    type: string
+                    description: Нормализованный вид исходной формулы
+                  similarity:
+                    type: number
+                    description: Процент совпадения
+                example:
+                  commonExpressions: ["a^{2} + 2 a b + b^{2}", "a^{2}", "b^{2}", "2 a b"]
+                  finded: "x^2 + 2xy + y^2"
+                  normalized: "a^{2} + 2 a b + b^{2}"
+                  similarity: 100.0
+        '400':
+          description: 'Неверные данные'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expression:
+                  type: string
+                  description: Текстовое представление формулы.
+              example:
+                expression: "x^2 + 2xy + y^2"
+        description: 'Проверка формулы на совпадения'
+        
+components:
+  schemas:
+    Formula:
+      type: object
+      required:
+        - fullName
+        - expression
+      properties:
+        id:
+          type: integer
+          example: 1        
+        fullName:
+          type: string
+          example: "\\sqrt{2}"
+        normalized:
+          type: string
+          example: "\\sqrt{2}"
+        expression:
+          type: string
+          example: "\\sqrt{2}"
+        date:
+          type: string
+          format: date-time
+          example: "Wed, 11 Dec 2024 17:33:09 GMT"
